@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14532d">
+<title>Controle de Almoxarifado</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Controle de Almoxarifado","short_name":"Almoxarifado","display":"standalone","start_url":".","background_color":"#f3f6f4","theme_color":"#14532d"}'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f3f6f4;--card:#fff;--tx:#17201b;--mut:#5d6b63;--bd:#d5ded8;--g:#14532d;--g2:#1f7a45;--r:#b42318;--y:#b7791f}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{background:var(--g);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0;flex:1}
+header button{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:8px;padding:8px 12px;font-size:15px}
+main{padding:14px;max-width:720px;margin:0 auto}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.menu button{border:0;border-radius:12px;padding:20px 8px;font-size:15px;font-weight:700;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.b1{background:#1f7a45}.b2{background:#c2570c}.b3{background:#2563a8}.b4{background:#1f2937}.b5{background:#a8920a}.b6{background:#64748b}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:8px;font-size:16px;background:#fff;color:var(--tx)}
+.btn{background:var(--g2);color:#fff;border:0;border-radius:8px;padding:12px 16px;font-size:15px;font-weight:600;margin-top:10px}
+.btn.s{background:#fff;color:var(--g);border:1px solid var(--g)}.btn.d{background:var(--r)}.btn.w{background:#25a244}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+.it{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.it b{display:block}.it small{color:var(--mut)}
+.tag{padding:3px 9px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap}
+.ok{background:#dcf2e4;color:#14532d}.bx{background:#fdecc8;color:#7a4b06}.zr{background:#fbdad7;color:#8a1a12}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.kpi div{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center}
+.kpi strong{display:block;font-size:22px;color:var(--g)}.kpi span{font-size:12px;color:var(--mut)}
+.bar{height:14px;background:var(--g2);border-radius:4px;margin-top:4px}
+h2{font-size:17px;margin:4px 0 10px}
+.empty{color:var(--mut);text-align:center;padding:24px 8px}
+:focus-visible{outline:3px solid #2563a8;outline-offset:2px}
+</style>
+</head>
+<body>
+<header><button id="bk" style="display:none" onclick="go('home')" aria-label="Voltar">←</button><h1 id="tt">Almoxarifado</h1></header>
+<main id="app"></main>
+<script>
+var D={prod:[],mov:[],cfg:{wa:'',emp:'Almoxarifado'}};
+try{var s=localStorage.getItem('almox_v1');if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}
+function save(){try{localStorage.setItem('almox_v1',JSON.stringify(D))}catch(e){alert('Não foi possível salvar neste navegador.')}}
+function $(i){return document.getElementById(i)}
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function hoje(){return new Date().toISOString().slice(0,10)}
+function br(d){return d.split('-').reverse().join('/')}
+function saldo(c){var n=0;D.mov.forEach(function(m){if(m.cod===c)n+=m.tipo==='E'?m.qtd:-m.qtd});return n}
+function st(p){var s=saldo(p.cod);return s<=0?['Zerado','zr']:s<=p.min?['Baixo','bx']:['OK','ok']}
+var V='home',T={home:'Almoxarifado',cad:'Cadastro de Produto',mov:'Entrada e Saída',est:'Gerenciamento de Estoque',dash:'Dashboard',pes:'Pesquisar',cfg:'Configuração'};
+function go(v){V=v;$('tt').textContent=T[v];$('bk').style.display=v==='home'?'none':'block';window.scrollTo(0,0);R[v]()}
+var R={};
+R.home=function(){
+$('app').innerHTML='<div class="menu"><button class="b1" onclick="go(\'cad\')">CADASTRO DE PRODUTO</button><button class="b2" onclick="go(\'est\')">GERENCIAMENTO DE ESTOQUE</button><button class="b3" onclick="go(\'mov\')">ENTRADA E SAÍDA</button><button class="b4" onclick="go(\'dash\')">DASHBOARD</button><button class="b5" onclick="go(\'pes\')">PESQUISAR</button><button class="b6" onclick="go(\'cfg\')">CONFIGURAÇÃO</button></div><div class="row" style="margin-top:12px"><button class="btn" onclick="xl()">Exportar para Excel</button><button class="btn w" onclick="wa()">Enviar no WhatsApp</button></div>'};
+R.cad=function(){
+var l=D.prod.map(function(p,i){return '<div class="card it"><div><b>'+esc(p.cod)+' · '+esc(p.desc)+'</b><small>'+esc(p.un)+' · '+esc(p.local||'sem local')+' · mínimo '+p.min+'</small></div><div><button class="btn s" style="margin:0 4px 0 0" onclick="ed('+i+')">Editar</button><button class="btn d" style="margin:0" onclick="del('+i+')">X</button></div></div>'}).join('');
+$('app').innerHTML='<div class="card"><input type="hidden" id="ei" value="-1"><label>Código</label><input id="c1"><label>Descrição</label><input id="c2"><div class="row"><div><label>Unidade</label><input id="c3" value="un"></div><div><label>Estoque mínimo</label><input id="c4" type="number" inputmode="decimal" value="0"></div></div><label>Local (prateleira)</label><input id="c5"><button class="btn" onclick="addP()">Salvar produto</button></div><h2>Produtos ('+D.prod.length+')</h2>'+(l||'<div class="empty">Nenhum produto. Cadastre o primeiro acima.</div>')};
+function addP(){var c=$('c1').value.trim(),d=$('c2').value.trim(),i=+$('ei').value;
+if(!c||!d){alert('Preencha código e descrição.');return}
+if(D.prod.some(function(p,k){return p.cod===c&&k!==i})){alert('Este código já existe.');return}
+var o={cod:c,desc:d,un:$('c3').value||'un',min:+$('c4').value||0,local:$('c5').value.trim()};
+if(i>=0){var old=D.prod[i].cod;D.prod[i]=o;if(old!==c)D.mov.forEach(function(m){if(m.cod===old)m.cod=c})}else D.prod.push(o);
+save();R.cad()}
+function ed(i){var p=D.prod[i];$('ei').value=i;$('c1').value=p.cod;$('c2').value=p.desc;$('c3').value=p.un;$('c4').value=p.min;$('c5').value=p.local;window.scrollTo(0,0)}
+function del(i){var p=D.prod[i];if(!confirm('Excluir '+p.desc+' e as movimentações dele?'))return;D.mov=D.mov.filter(function(m){return m.cod!==p.cod});D.prod.splice(i,1);save();R.cad()}
+R.mov=function(){
+if(!D.prod.length){$('app').innerHTML='<div class="empty">Cadastre um produto antes de registrar movimentações.</div>';return}
+var o=D.prod.map(function(p){return '<option value="'+esc(p.cod)+'">'+esc(p.cod)+' · '+esc(p.desc)+'</option>'}).join('');
+var h=D.mov.slice().reverse().slice(0,30).map(function(m){var p=D.prod.filter(function(x){return x.cod===m.cod})[0]||{desc:'?'};return '<div class="card it"><div><b>'+esc(p.desc)+'</b><small>'+br(m.data)+(m.quem?' · '+esc(m.quem):'')+(m.setor?' · '+esc(m.setor):'')+'</small></div><span class="tag '+(m.tipo==='E'?'ok':'zr')+'">'+(m.tipo==='E'?'+':'−')+m.qtd+'</span></div>'}).join('');
+$('app').innerHTML='<div class="card"><label>Produto</label><select id="m1" onchange="sl()">'+o+'</select><small id="sd" style="color:var(--mut)"></small><div class="row"><div><label>Tipo</label><select id="m2"><option value="S">Saída</option><option value="E">Entrada</option></select></div><div><label>Quantidade</label><input id="m3" type="number" inputmode="decimal"></div></div><div class="row"><div><label>Data</label><input id="m4" type="date" value="'+hoje()+'"></div><div><label>Quem retirou/entregou</label><input id="m5"></div></div><label>Setor</label><input id="m6"><button class="btn" onclick="addM()">Registrar</button></div><h2>Últimos registros</h2>'+(h||'<div class="empty">Nenhuma movimentação ainda.</div>');sl()};
+function sl(){var c=$('m1').value;$('sd').textContent='Saldo atual: '+saldo(c)}
+function addM(){var c=$('m1').value,t=$('m2').value,q=+$('m3').value;
+if(!(q>0)){alert('Digite uma quantidade maior que zero.');return}
+if(t==='S'&&q>saldo(c)){alert('Saída maior que o saldo ('+saldo(c)+').');return}
+D.mov.push({cod:c,tipo:t,qtd:q,data:$('m4').value||hoje(),quem:$('m5').value.trim(),setor:$('m6').value.trim()});save();R.mov()}
+R.est=function(){
+var l=D.prod.map(function(p){var s=st(p);return '<div class="card it"><div><b>'+esc(p.desc)+'</b><small>'+esc(p.cod)+' · '+esc(p.local||'sem local')+' · mín. '+p.min+'</small></div><div style="text-align:right"><b>'+saldo(p.cod)+' '+esc(p.un)+'</b><span class="tag '+s[1]+'">'+s[0]+'</span></div></div>'}).join('');
+$('app').innerHTML=(l||'<div class="empty">Sem produtos cadastrados.</div>')};
+R.dash=function(){
+var tot=D.prod.length,bx=D.prod.filter(function(p){return st(p)[1]!=='ok'}).length,m30=0,lim=new Date(Date.now()-30*864e5).toISOString().slice(0,10),sa={};
+D.mov.forEach(function(m){if(m.tipo==='S'){sa[m.cod]=(sa[m.cod]||0)+m.qtd;if(m.data>=lim)m30++}});
+var top=Object.keys(sa).sort(function(a,b){return sa[b]-sa[a]}).slice(0,5),mx=top.length?sa[top[0]]:1;
+var tb=top.map(function(c){var p=D.prod.filter(function(x){return x.cod===c})[0]||{desc:c};return '<div style="margin-bottom:10px"><div class="it"><span>'+esc(p.desc)+'</span><b>'+sa[c]+'</b></div><div class="bar" style="width:'+Math.max(4,sa[c]/mx*100)+'%"></div></div>'}).join('');
+var cr=D.prod.filter(function(p){return st(p)[1]!=='ok'}).map(function(p){return '<div class="it" style="margin-bottom:6px"><span>'+esc(p.desc)+'</span><span class="tag '+st(p)[1]+'">'+saldo(p.cod)+' / mín. '+p.min+'</span></div>'}).join('');
+$('app').innerHTML='<div class="kpi"><div><strong>'+tot+'</strong><span>Produtos</span></div><div><strong style="color:var(--r)">'+bx+'</strong><span>Itens críticos</span></div><div><strong>'+m30+'</strong><span>Saídas em 30 dias</span></div></div><div class="card"><h2>Maiores saídas</h2>'+(tb||'<div class="empty">Sem saídas registradas.</div>')+'</div><div class="card"><h2>Itens para repor</h2>'+(cr||'<div class="empty">Nenhum item crítico.</div>')+'</div>'};
+R.pes=function(){$('app').innerHTML='<input id="q" type="search" placeholder="Código, nome ou local" oninput="bs()"><div id="rs" style="margin-top:10px"></div>';bs()};
+function bs(){var q=$('q').value.toLowerCase().trim();
+var r=D.prod.filter(function(p){return !q||(p.cod+' '+p.desc+' '+p.local).toLowerCase().indexOf(q)>-1});
+$('rs').innerHTML=r.map(function(p){var s=st(p);return '<div class="card it"><div><b>'+esc(p.desc)+'</b><small>'+esc(p.cod)+' · '+esc(p.local||'sem local')+'</small></div><div style="text-align:right"><b>'+saldo(p.cod)+' '+esc(p.un)+'</b><span class="tag '+s[1]+'">'+s[0]+'</span></div></div>'}).join('')||'<div class="empty">Nada encontrado.</div>'}
+R.cfg=function(){
+$('app').innerHTML='<div class="card"><label>Nome do almoxarifado</label><input id="f1" value="'+esc(D.cfg.emp)+'"><label>WhatsApp padrão (com DDD, só números)</label><input id="f2" inputmode="numeric" placeholder="11999999999" value="'+esc(D.cfg.wa)+'"><button class="btn" onclick="sc()">Salvar configuração</button></div><div class="card"><b>Backup</b><div class="row"><button class="btn s" onclick="bkp()">Baixar backup</button><button class="btn s" onclick="$(\'fi\').click()">Restaurar backup</button></div><input id="fi" type="file" accept=".json" style="display:none" onchange="rst(this)"></div><div class="card"><button class="btn d" onclick="zera()">Apagar todos os dados</button></div>'};
+function sc(){D.cfg.emp=$('f1').value.trim()||'Almoxarifado';D.cfg.wa=$('f2').value.replace(/\D/g,'');save();alert('Configuração salva.')}
+function bkp(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:'application/json'}));a.download='almoxarifado-backup-'+hoje()+'.json';a.click()}
+function rst(i){var f=i.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(!d.prod||!d.mov)throw 0;D=d;save();alert('Backup restaurado.');go('home')}catch(e){alert('Arquivo de backup inválido.')}};r.readAsText(f)}
+function zera(){if(confirm('Apagar TODOS os produtos e movimentações?')){D.prod=[];D.mov=[];save();go('home')}}
+function xl(){
+if(typeof XLSX==='undefined'){alert('A biblioteca do Excel não carregou. Conecte à internet e tente de novo.');return}
+var wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(D.prod.map(function(p){return{Código:p.cod,Descrição:p.desc,Unidade:p.un,Local:p.local,Mínimo:p.min,Saldo:saldo(p.cod),Situação:st(p)[0]}})),'Estoque');
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(D.mov.map(function(m){return{Data:br(m.data),Código:m.cod,Tipo:m.tipo==='E'?'Entrada':'Saída',Quantidade:m.qtd,Pessoa:m.quem,Setor:m.setor}})),'Movimentações');
+XLSX.writeFile(wb,'almoxarifado-'+hoje()+'.xlsx')}
+function wa(){
+var cr=D.prod.filter(function(p){return st(p)[1]!=='ok'});
+var t='*'+D.cfg.emp+'* - '+br(hoje())+'\n\n'+(cr.length?'*Itens para repor:*\n'+cr.map(function(p){return '• '+p.desc+' ('+p.cod+'): '+saldo(p.cod)+' '+p.un+' (mín. '+p.min+')'}).join('\n'):'Nenhum item crítico.')+'\n\nTotal de produtos: '+D.prod.length;
+window.open('https://wa.me/'+(D.cfg.wa?'55'+D.cfg.wa.replace(/^55/,''):'')+'?text='+encodeURIComponent(t),'_blank')}
+go('home');
+</script>
+</body>
+</html>
