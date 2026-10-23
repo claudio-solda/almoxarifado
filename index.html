@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14532d">
-<title>Controle de Almoxarifado</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Controle de Almoxarifado","short_name":"Almoxarifado","display":"standalone","start_url":".","background_color":"#f3f6f4","theme_color":"#14532d"}'>
+<title>Controle do Almoxarifado</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Controle do Almoxarifado","short_name":"Almoxarifado","display":"standalone","start_url":".","background_color":"#f3f6f4","theme_color":"#14532d"}'>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f3f6f4;--card:#fff;--tx:#17201b;--mut:#5d6b63;--bd:#d5ded8;--g:#14532d;--g2:#1f7a45;--r:#b42318;--y:#b7791f}
@@ -38,7 +38,7 @@ h2{font-size:17px;margin:4px 0 10px}
 </style>
 </head>
 <body>
-<header><button id="bk" style="display:none" onclick="go('home')" aria-label="Voltar">←</button><h1 id="tt">Almoxarifado</h1></header>
+<header><button id="bk" style="display:none" onclick="go('home')" aria-label="Voltar">←</button><h1 id="tt">Controle do Almoxarifado</h1></header>
 <main id="app"></main>
 <script>
 var D={prod:[],mov:[],cfg:{wa:'',emp:'Almoxarifado'}};
@@ -50,7 +50,7 @@ function hoje(){return new Date().toISOString().slice(0,10)}
 function br(d){return d.split('-').reverse().join('/')}
 function saldo(c){var n=0;D.mov.forEach(function(m){if(m.cod===c)n+=m.tipo==='E'?m.qtd:-m.qtd});return n}
 function st(p){var s=saldo(p.cod);return s<=0?['Zerado','zr']:s<=p.min?['Baixo','bx']:['OK','ok']}
-var V='home',T={home:'Almoxarifado',cad:'Cadastro de Produto',mov:'Entrada e Saída',est:'Gerenciamento de Estoque',dash:'Dashboard',pes:'Pesquisar',cfg:'Configuração'};
+var V='home',T={home:'Controle do Almoxarifado',cad:'Cadastro de Produto',mov:'Entrada e Saída',est:'Gerenciamento de Estoque',dash:'Dashboard',pes:'Pesquisar',cfg:'Configuração'};
 function go(v){V=v;$('tt').textContent=T[v];$('bk').style.display=v==='home'?'none':'block';window.scrollTo(0,0);R[v]()}
 var R={};
 R.home=function(){
